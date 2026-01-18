@@ -7,7 +7,7 @@
   "scripts": {
     "start": "npm run dev",
     "build": "npm run lint && tsc && vite build",
-    "lint": "eslint .",
+    "lint": "eslint . --fix",
     "dev": "vite",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
@@ -15,6 +15,7 @@
   "dependencies": {
     "gh-pages": "^6.3.0",
     "howler": "^2.2.4",
+    "matter-js": "^0.20.0",
     "pixi.js": "^8.8.1"
   },
   "devDependencies": {

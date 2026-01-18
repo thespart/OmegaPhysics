@@ -1,7 +1,22 @@
 import { Howl } from "howler";
 import { Application, Assets, Rectangle, Sprite } from "pixi.js";
+import {
+  Collidable,
+  Create,
+  DeleteTrail,
+  ChangeCalculatedsize,
+} from "./Objects";
+import { ImagesToList } from "./catsimagesload";
+import { addsoundbutton, addroofbutton, addRestartbutton } from "./buttons";
 
 (async () => {
+  // моё авторство
+  console.log(
+    "Hello everyone! This little website is made by TheSpart (or SpartTheKOT or Spart, it doesnt matter :) ). I hope you liked it!" +
+      "However, if you didn't really enjoyed it, you can gimme ideas what to improve to make this website better!" +
+      "You can contact me in telegram - @the_spart, or in discord - @the_spart",
+  );
+
   // Create a new application
   const app = new Application();
 
@@ -19,168 +34,176 @@ import { Application, Assets, Rectangle, Sprite } from "pixi.js";
   };
 
   function Randomizable(min: number, max: number) {
-    return Math.floor(Math.random()) * (max - min) + min;
+    return Math.floor(Math.random() * (max - min) + min);
   }
 
-  const texture = await Assets.load("/assets/pixil-frame-0.png");
-  const texture1 = await Assets.load("/assets/pixil-frame-0 (1).png");
-  const textureShin = await Assets.load("/assets/саша милаша.png");
-  const man = new Sprite(texture);
-  const Shinshila = new Sprite(textureShin);
-  const sizeofman = 1;
-  const sizeofshin = 0.25;
+  const gravitygunsleeptexture = await Assets.load(
+    "/OmegaPhysics/OmegaPhysics/assets/images/pixil-frame-0.png",
+  );
+  const gravitygunactivetexture = await Assets.load(
+    "/OmegaPhysics/OmegaPhysics/assets/images/pixil-frame-0 (1).png",
+  );
 
+  const man = new Sprite(gravitygunsleeptexture);
+  const sizeofman = 1;
+  const ongoingTouches = new Map();
   // sounds
-  const ggshoot = new Howl({ src: ["/assets/ggshoot.mp3"] });
-  const ggpick = new Howl({ src: ["/assets/ggpick.mp3"] });
-  const gghold = new Howl({ src: ["/assets/gghold.mp3"], loop: true });
-  const ggfail = new Howl({ src: ["/assets/ggfail.mp3"] });
-  const ggdrop = new Howl({ src: ["assets/ggdrop.mp3"] });
+
+  const listOfHitSound = [
+    "/OmegaPhysics/OmegaPhysics/assets/audio/hitsound.mp3",
+    "/OmegaPhysics/OmegaPhysics/assets/audio/hitsound2.mp3",
+    "/OmegaPhysics/OmegaPhysics/assets/audio/hitsound3.mp3",
+    "/OmegaPhysics/OmegaPhysics/assets/audio/hitsound4.mp3",
+    "/OmegaPhysics/OmegaPhysics/assets/audio/hitsound5.mp3",
+  ];
+  const ggshoot = new Howl({
+    src: ["/OmegaPhysics/OmegaPhysics/assets/audio/ggshoot.mp3"],
+    volume: 0.4,
+  });
+  const ggpick = new Howl({
+    src: ["/OmegaPhysics/OmegaPhysics/assets/audio/ggpick.mp3"],
+    volume: 0.4,
+  });
+  const gghold = new Howl({
+    src: ["/OmegaPhysics/OmegaPhysics/assets/audio/gghold.mp3"],
+    volume: 1,
+    loop: true,
+  });
+  const ggfail = new Howl({
+    src: ["/OmegaPhysics/OmegaPhysics/assets/audio/ggfail.mp3"],
+    volume: 0.4,
+  });
+  const ggdrop = new Howl({
+    src: ["/OmegaPhysics/OmegaPhysics/assets/audio/ggdrop.mp3"],
+    volume: 0.4,
+  });
 
   //man.anchor.set(0.5);
   man.scale.set(sizeofman);
   man.eventMode = "static";
+  man.zIndex = 1000;
   man.hitArea = new Rectangle(0, 0, 0, 0);
 
+  // for pc
   man.on("globalpointermove", (event) => {
     mousePos.x = event.x;
     mousePos.y = event.y;
   });
 
-  Shinshila.anchor.set(0.5);
-  app.stage.addChild(Shinshila);
-  app.stage.addChild(man);
+  window.addEventListener("touchstart", (event) => {
+    event.preventDefault();
 
-  // shinshilla
-
-  let IsHolding = false;
-  let yskorenie = 0;
-  let belowZero = false;
-  const inertia = {
-    x: 0,
-    y: 0,
-  };
-
-  Shinshila.position.set(innerWidth / 2, innerHeight / 2);
-  Shinshila.scale.set(sizeofshin);
-
-  Shinshila.eventMode = "static";
-
-  Shinshila.on("pointerdown", () => {
-    IsHolding = true;
-    man.texture = texture1;
-    ggpick.play();
-    gghold.play();
+    for (const changedTouch of event.changedTouches) {
+      const touch = {
+        pageX: changedTouch.pageX,
+        pageY: changedTouch.pageY,
+      };
+      ongoingTouches.set(changedTouch.identifier, touch);
+      mousePos.x = touch.pageX;
+      mousePos.y = touch.pageY;
+    }
   });
-
-  Shinshila.on("pointerup", () => {
-    IsHolding = false;
-    inertia.x = mousePos.dx;
-    inertia.y = mousePos.dy;
-    man.texture = texture;
-    ggdrop.play();
-    gghold.pause();
-  });
-
-  Shinshila.on("pointertap", () => {
+  window.addEventListener("click", (event) => {
+    mousePos.x = event.x;
+    mousePos.y = event.y;
     if (mousePos.dx == 0 && mousePos.dy == 0) {
-      inertia.x = Randomizable(-100, 100);
-      inertia.y = Randomizable(-100, 100);
       ggshoot.play();
     } else {
       ggfail.play();
     }
   });
+  window.addEventListener("pointerdown", () => {
+    ggpick.play();
+    gghold.play();
+    man.texture = gravitygunactivetexture;
+  });
+  window.addEventListener("pointerup", () => {
+    ggdrop.play();
+    gghold.stop();
+    man.texture = gravitygunsleeptexture;
+  });
 
-  app.ticker.add(() => {
+  const Objects: Collidable[] = [];
+  let CalculatedSize = innerWidth / 1000;
+  const amount = 5;
+  const listOfImages: string[] = ImagesToList(20);
+  //const randomHitSound = listOfHitSound[Randomizable(0,5)];
+  const hitsoundsused: Howl[] = [
+    new Howl({ src: listOfHitSound[0], volume: 0.5 }),
+    new Howl({ src: listOfHitSound[0], volume: 0.5 }),
+    new Howl({ src: listOfHitSound[0], volume: 0.5 }),
+    new Howl({ src: listOfHitSound[0], volume: 0.5 }),
+    new Howl({ src: listOfHitSound[0], volume: 0.5 }),
+  ]; // это для кнопки
+
+  async function CreateColliadables() {
+    for (let i = 0; i < amount; i++) {
+      const texture = await Assets.load(listOfImages[Randomizable(0, 20)]);
+      Objects.push(
+        new Collidable(
+          i * innerWidth * 0.25,
+          400,
+          CalculatedSize * 0.3,
+          new Sprite(texture),
+          true,
+          hitsoundsused[i],
+        ),
+      );
+      app.stage.addChild(Objects[i].PixiSprite);
+    }
+  }
+  async function InitializeEverything() {
+    // создаем все объекты
+    await CreateColliadables();
+    // создаем клонов (для создания трейл эффекта)
+    Create(app);
+    app.stage.addChild(man);
+
+    // cjplftv fjedfkdf
+    addRestartbutton(app, async () => {
+      app.ticker.stop();
+      CalculatedSize = innerWidth / 1000;
+      ChangeCalculatedsize(CalculatedSize);
+      for (let _ = 0; _ < amount; _++) {
+        Objects.pop();
+      }
+      DeleteTrail();
+      app.stage.removeChildren(0, 999);
+      await InitializeEverything();
+      app.ticker.start();
+    });
+    // cоздаем кнопку для включения/выключения потолка
+    addroofbutton(app);
+    // создаем кнопку для включения/выключения звуков
+    addsoundbutton(app, [
+      ggdrop,
+      ggfail,
+      ggshoot,
+      gghold,
+      ggpick,
+      hitsoundsused[0],
+      hitsoundsused[1],
+      hitsoundsused[2],
+      hitsoundsused[3],
+      hitsoundsused[4],
+    ]);
+  }
+
+  await InitializeEverything();
+
+  // game loop
+  app.ticker.add((time) => {
+    time.maxFPS = 0;
+    man.position.set(mousePos.x, mousePos.y);
+
     mousePos.dx = mousePos.x - mousePos.prevx;
     mousePos.dy = mousePos.y - mousePos.prevy;
 
-    // man ------------
-    /*if (mousePos.x > innerWidth/2) {
-      man.scale.set(-sizeofman,sizeofman);
-    }else {
-      man.scale.set(sizeofman, sizeofman);
-    };*/
-    man.position.set(mousePos.x, mousePos.y);
-    //-------------------
-
-    // shinshila ----------------
-    if (IsHolding == true) {
-      Shinshila.position.y = Shinshila.position.y + mousePos.dy;
-      Shinshila.position.x = Shinshila.position.x + mousePos.dx;
-      yskorenie = 0;
-    } else {
-      if (!belowZero) {
-        yskorenie += 0.983;
-      }
-
-      Shinshila.position.y += yskorenie + inertia.y;
-      Shinshila.position.x += inertia.x;
-      inertia.x *= 0.99;
-      inertia.y *= 0.99;
-
-      // collision
-
-      // below zero
-      if (
-        Shinshila.position.y + Shinshila.bounds.bottom * sizeofshin >
-        innerHeight
-      ) {
-        belowZero = true;
-        yskorenie *= 0.7;
-        inertia.x *= 0.8;
-        Shinshila.position.y =
-          innerHeight - Shinshila.bounds.bottom * sizeofshin;
-      } else {
-        belowZero = false;
-      }
-
-      //bottom
-      if (
-        Shinshila.position.y + Shinshila.bounds.bottom * sizeofshin >=
-        innerHeight
-      ) {
-        inertia.y = -yskorenie - inertia.y;
-        inertia.y *= 0.9;
-        yskorenie = 0;
-        //collisionSounds[1].play();
-      }
-
-      // top, it never happens when shinshilla stucks in top
-      if (Shinshila.position.y + Shinshila.bounds.top * sizeofshin <= 0) {
-        inertia.y = -yskorenie - inertia.y;
-        yskorenie = 0;
-        //collisionSounds[1].play();
-      }
-
-      // right
-      if (
-        Shinshila.position.x + Shinshila.bounds.right * sizeofshin >=
-        innerWidth
-      ) {
-        inertia.x = -inertia.x;
-        //collisionSounds[1].play();
-      }
-
-      // if stuck in right
-      if (
-        Shinshila.position.x + Shinshila.bounds.right * sizeofshin >
-        innerWidth
-      ) {
-        Shinshila.position.x -= 10;
-      }
-
-      // left
-      if (Shinshila.position.x + Shinshila.bounds.left * sizeofshin <= 0) {
-        inertia.x = -inertia.x;
-        //collisionSounds[1].play();
-      }
-      // if stuck in left
-      if (Shinshila.position.x + Shinshila.bounds.left * sizeofshin < 0) {
-        Shinshila.position.x += 10;
-      }
+    for (let i = 0; i < amount; i++) {
+      Objects[i].updatedelta(mousePos.dx, mousePos.dy); // сначала обновляем силу с которой игрок кидает объект
+      Objects[i].update(time.lastTime, mousePos.x, mousePos.y); // обновляем все значения
     }
+
     mousePos.prevx = mousePos.x;
     mousePos.prevy = mousePos.y;
   });
