@@ -1,14 +1,21 @@
+html {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    position: relative;
+}
+
 body {
     margin: 0;
     padding: 0;
     color: rgba(255, 255, 255, 0.87);
-    background-color: #000000;
-    cursor: none; 
+    background-color: rgb(255, 255, 255);
+    cursor: none;
 }
 
 #app {
     width: 100%;
-    height: 100vh;
+    height: 100%;
     overflow: hidden;
     display: flex;
     justify-content: center;
